@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Document model - stores original text input
+// Users are managed by Supabase Auth (auth.users table)
+// We reference them by their Supabase Auth ID (UUID)
+model Document {
+  id           String      @id @default(cuid())
+  userId       String      // References auth.users.id from Supabase Auth
+  title        String?
+  originalText String
+  mode         String      // "mcq" or "flashcard"
+  difficulty   String      // "easy", "medium", "hard"
+  style        String      // "clinical", "high_yield", "exam"
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  // Relations
+  mcqs            MCQ[]
+  flashcards      Flashcard[]
+  practiceSessions PracticeSession[]
+  
+  // Index for filtering
+  @@index([userId])
+  @@index([mode])
+  @@index([difficulty])
+  @@index([style])
+  @@index([createdAt])
+}
+
+// MCQ model - Multiple Choice Questions
+model MCQ {
+  id             String   @id @default(cuid())
+  documentId     String
+  question       String
+  optionA        String
+  optionB        String
+  optionC        String
+  optionD        String
+  correctAnswer  String   // "A", "B", "C", or "D"
+  explanation    String
+  hint           String?  // Optional hint for practice mode
+  difficulty     String   // "easy", "medium", "hard"
+  style          String   // "clinical", "high_yield", "exam"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relation
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  // Indexes for filtering
+  @@index([documentId])
+  @@index([difficulty])
+  @@index([style])
+}
+
+// Flashcard model
+model Flashcard {
+  id                  String   @id @default(cuid())
+  documentId          String
+  front               String   // Question or concept
+  back                String   // Answer or explanation
+  mnemonic            String?  // Optional mnemonic
+  clinicalCorrelation String?  // Optional clinical correlation
+  keyPoint            String?  // Optional key point
+  difficulty          String   // "easy", "medium", "hard"
+  style               String   // "clinical", "high_yield", "exam"
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  // Relation
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  // Indexes for filtering
+  @@index([documentId])
+  @@index([difficulty])
+  @@index([style])
+}
+
+// Practice Session model - track user practice progress
+model PracticeSession {
+  id             String    @id @default(cuid())
+  documentId     String
+  mode           String    // "mcq" or "flashcard"
+  totalItems     Int
+  correctCount   Int       @default(0)
+  incorrectCount Int       @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  
+  // Relation
+  document       Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  @@index([documentId])
+  @@index([createdAt])
+}
+
+// Bookmark model - store user bookmarks for MCQs and Flashcards
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String   // References auth.users.id from Supabase Auth
+  itemType  String   // "mcq" or "flashcard"
+  itemId    String   // ID of the MCQ or Flashcard
+  createdAt DateTime @default(now())
+  
+  // Indexes for quick lookups
+  @@unique([userId, itemType, itemId]) // Prevent duplicate bookmarks per user
+  @@index([userId])
+  @@index([itemType])
+  @@index([createdAt])
+}
