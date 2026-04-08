@@ -4,7 +4,7 @@ import { splitTextIntoChunks, distributeQuestionCount, type TextChunk } from '@/
 
 // Initialize OpenAI client with Baseten configuration
 const client = new OpenAI({
-  apiKey: 'g1SjmcWL.vaFVDRnYiiGpYsRyjxuapGEOa6S7Gl2N',
+  apiKey: '52hEVKKE.KgInA6B3FxUNeFrmikh1mfxiWbWshu8Z',
   baseURL: 'https://inference.baseten.co/v1',
 });
 
